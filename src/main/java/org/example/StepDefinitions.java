@@ -14,7 +14,9 @@ import java.util.List;
 public class StepDefinitions {
     WebDriver driver;
     WebElement highestItemPriceWebElement;
+    WebElement secondHighestItemPriceWebElement;
     String highestItemPriceItemName;
+    String secondHighestItemPriceItemName;
 
     @Given("^The user has navigated to the following URL: (.*)$")
     public void theUserHasNavigatedToTheFollowingURL(String url) {
@@ -40,46 +42,69 @@ public class StepDefinitions {
         AssertionFunctions.assertEquals("Page Sub Header", "Products", actualSubHeader);
     }
 
-    @When("The user selects the highest price item")
-    public void theUserSelectsTheHighestPriceItem() {
+    @When("^The user selects the(.*) highest price item$")
+    public void theUserSelectsTheHighestPriceItem(String whichItem) {
         System.out.println("\nIterating through inventory items");
         List<WebElement> inventoryItemsWebElements = driver.findElements(By.xpath("//div[@class='inventory_item']"));
 
         float highestItemPrice = 0;
+        float secondHighestItemPrice = 0;
         for (WebElement inventoryItemWebElement : inventoryItemsWebElements) {
             String itemName = inventoryItemWebElement.findElement(By.xpath(".//a/div")).getText();
             String itemPriceAsString = inventoryItemWebElement.findElement(By.xpath(".//div[@class='inventory_item_price']")).getText();
             float itemPrice = Float.parseFloat(itemPriceAsString.replace("$", ""));
-            if (itemPrice > highestItemPrice) {
-                highestItemPriceWebElement = inventoryItemWebElement;
-                highestItemPriceItemName = itemName;
-                highestItemPrice = itemPrice;
+            if (itemPrice > secondHighestItemPrice) {
+                if (itemPrice > highestItemPrice) {
+                    secondHighestItemPriceWebElement = highestItemPriceWebElement;
+                    secondHighestItemPriceItemName = highestItemPriceItemName;
+                    secondHighestItemPrice = highestItemPrice;
+                    highestItemPriceWebElement = inventoryItemWebElement;
+                    highestItemPriceItemName = itemName;
+                    highestItemPrice = itemPrice;
+                } else {
+                    secondHighestItemPriceWebElement = inventoryItemWebElement;
+                    secondHighestItemPriceItemName = itemName;
+                    secondHighestItemPrice = itemPrice;
+                }
             }
         }
-        System.out.println("Item '" + highestItemPriceItemName + "' has the highest price of '$" + highestItemPrice + "'");
 
-        System.out.println("\nClicking highest price item");
-        highestItemPriceWebElement.findElement(By.xpath(".//a")).click();
+        if ("second".equals(whichItem.trim())) {
+            System.out.println("Item '" + secondHighestItemPriceItemName + "' has the second highest price of '$" + secondHighestItemPrice + "'");
+
+            System.out.println("\nClicking second highest price item");
+            secondHighestItemPriceWebElement.findElement(By.xpath(".//a")).click();
+
+        } else {
+            System.out.println("Item '" + highestItemPriceItemName + "' has the highest price of '$" + highestItemPrice + "'");
+
+            System.out.println("\nClicking highest price item");
+            highestItemPriceWebElement.findElement(By.xpath(".//a")).click();
+        }
 
         String actualSubHeader = driver.findElement(By.xpath("//div[@class='header_secondary_container']")).getText();
         AssertionFunctions.assertEquals("Page Sub Header", "Back to products", actualSubHeader);
     }
 
-    @Then("The highest price item is shown")
-    public void theHighestPriceItemIsShown() {
+    @Then("^The(.*) highest price item is shown$")
+    public void theHighestPriceItemIsShown(String whichItem) {
         String actualItemName = driver.findElement(By.xpath("//div[@class='inventory_details_name large_size']")).getText();
-        AssertionFunctions.assertEquals("Selected Item Name", highestItemPriceItemName, actualItemName);
+        if ("second".equals(whichItem.trim())) {
+            AssertionFunctions.assertEquals("Selected Item Name", secondHighestItemPriceItemName, actualItemName);
+        } else {
+            AssertionFunctions.assertEquals("Selected Item Name", highestItemPriceItemName, actualItemName);
+        }
     }
 
-    @When("The user adds the selected highest price item to the cart")
-    public void theUserAddsTheSelectedHighestPriceItemToTheCart() {
+    @When("^The user adds the selected item to the cart$")
+    public void theUserAddsTheSelectedItemToTheCart() {
         System.out.println("\nClicking Add to cart");
 
         driver.findElement(By.xpath("//button[text()='Add to cart']")).click();
     }
 
-    @Then("The highest price item appears in the cart")
-    public void theHighestPriceItemAppearsInTheCart() {
+    @Then("^The(.*) highest price item appears in the cart$")
+    public void theHighestPriceItemAppearsInTheCart(String whichItem) {
         System.out.println("\nClicking Shopping cart");
         driver.findElement(By.xpath("//a[@class='shopping_cart_link']")).click();
 
@@ -87,6 +112,10 @@ public class StepDefinitions {
         AssertionFunctions.assertEquals("Page Sub Header", "Your Cart", actualSubHeader);
 
         String actualItemNameInCart = driver.findElement(By.xpath("//div[@class='inventory_item_name']")).getText();
-        AssertionFunctions.assertEquals("Item Name In Cart", highestItemPriceItemName, actualItemNameInCart);
+        if ("second".equals(whichItem.trim())) {
+            AssertionFunctions.assertEquals("Item Name In Cart", secondHighestItemPriceItemName, actualItemNameInCart);
+        } else {
+            AssertionFunctions.assertEquals("Item Name In Cart", highestItemPriceItemName, actualItemNameInCart);
+        }
     }
 }
